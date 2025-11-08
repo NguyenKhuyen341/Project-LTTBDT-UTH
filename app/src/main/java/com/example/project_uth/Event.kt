@@ -25,6 +25,7 @@ data class Event(
     val repeatInterval: Int? = null,
     val repeatUnit: String? = null,
     val repeatEndDate: LocalDate? = null,
+    val exceptionDates: List<LocalDate> = emptyList()
 
     )
 fun Event.isRepeating(): Boolean = repeatInterval != null && repeatUnit != null

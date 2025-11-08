@@ -53,7 +53,6 @@ private fun CalendarTopAppBar() {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(8.dp))
-            // Nếu chưa có drawable này, comment 3 dòng dưới
             Image(
                 painter = painterResource(id = R.drawable.avatar_placeholder),
                 contentDescription = "Avatar",
@@ -167,7 +166,7 @@ private fun DayCell(
 }
 
 @Composable
-private fun EventList(events: List<Event>, modifier: Modifier = Modifier) {
+private fun EventList(events: List<Event>, modifier: Modifier = Modifier,onEventClick: (Event) -> Unit) {
     if (events.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
             Text("Không có sự kiện nào cho ngày này.", color = Color.Gray, textAlign = TextAlign.Center)
@@ -178,18 +177,23 @@ private fun EventList(events: List<Event>, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
         ) {
-            items(events) { e -> EventCard(event = e) }
+            items(events) { e -> EventCard(
+                event = e,
+                modifier = Modifier.clickable {
+                    onEventClick(e)
+                }
+            ) }
         }
     }
 }
 
 @Composable
-private fun EventCard(event: Event) {
+private fun EventCard(event: Event,modifier: Modifier = Modifier) {
     val cardColor = event.color ?: MaterialTheme.colorScheme.surfaceVariant
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = cardColor,
         shadowElevation = 2.dp
@@ -206,15 +210,12 @@ private fun EventCard(event: Event) {
                 }
                 if (timeText.isNotEmpty()) Text(timeText, fontSize = 14.sp, color = Color.Gray)
             }
-            Spacer(Modifier.width(8.dp))
-            AvatarStack()
         }
     }
 }
 
 @Composable
 private fun AvatarStack() {
-    // Nếu chưa có drawable avatar_placeholder, comment toàn bộ composable này và chỗ gọi nó.
     Box(contentAlignment = Alignment.CenterEnd) {
         val imageSize = 24.dp
         val overlap = 8.dp
@@ -297,7 +298,7 @@ private fun NewBottomNavItem(
 private fun generateCalendarDays(currentMonth: YearMonth): List<LocalDate?> {
     val days = mutableListOf<LocalDate?>()
     val firstDay = currentMonth.atDay(1)
-    val firstDow = firstDay.dayOfWeek.value // 1=Mon..7=Sun
+    val firstDow = firstDay.dayOfWeek.value
     val empty = if (firstDow == 1) 0 else firstDow - 1
     repeat(empty) { days.add(null) }
     val numDays = currentMonth.lengthOfMonth()
@@ -312,9 +313,14 @@ fun CalendarMainScreen(
     navController: NavController,
     initialSelectedDate: LocalDate,
     allEvents: SnapshotStateList<Event>,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    onDeleteEvent: (Event) -> Unit,
+    onUpdateEvent: (Event, Event) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(initialSelectedDate) }
+
+    var showEventSheet by remember { mutableStateOf(false) }
+    var eventToSheet by remember { mutableStateOf<Event?>(null) }
 
     val dayEvents by remember(allEvents.size, selectedDate) {
         derivedStateOf {
@@ -344,34 +350,60 @@ fun CalendarMainScreen(
             )
             EventList(
                 events = dayEvents,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onEventClick = { event -> eventToSheet = event
+                    showEventSheet = true
+                }
             )
+
+            if (showEventSheet && eventToSheet != null) {
+                EventDetailSheet(
+                    event = eventToSheet!!,
+                    selectedDate = selectedDate,
+                    onDismiss = { showEventSheet = false },
+
+
+                    onDelete = { event, deleteType, date ->
+                        if (deleteType == DeleteType.ALL) {
+                            onDeleteEvent(event)
+                        } else {
+                            val newExceptions = event.exceptionDates + date
+                            val updatedEvent = event.copy(exceptionDates = newExceptions)
+                            onUpdateEvent(event, updatedEvent)
+                        }
+                        showEventSheet = false
+                    },
+
+                    onEdit = {
+                        println("LOGIC: Sửa sự kiện (chưa làm)")
+                    }
+                )
+            }
+
+
+        }
+
         }
     }
-}
 
-// --- CHUYỂN HÀM RA ĐÂY ---
-// Đặt hàm này ở cuối file, bên ngoài tất cả các composable khác.
-// Bạn có thể giữ 'private' nếu chỉ muốn dùng trong file CalendarScreen.kt
+
+
 private fun Event.isOccurringOn(selectedDate: LocalDate): Boolean {
-    // 1. Nếu sự kiện không lặp lại
+    if (this.exceptionDates.contains(selectedDate)) return false
     if (!this.isRepeating()) {
         if (this.endDate == null) {
             return this.date.isEqual(selectedDate)
         } else {
-            // Sự kiện kéo dài nhiều ngày (không lặp lại)
             return !selectedDate.isBefore(this.date) && !selectedDate.isAfter(this.endDate)
         }
     }
 
-    // 2. Nếu là sự kiện lặp lại
     val startDate = this.date
     val repeatEndDate = this.repeatEndDate
 
     if (selectedDate.isBefore(startDate)) return false
     if (repeatEndDate != null && selectedDate.isAfter(repeatEndDate)) return false
 
-    // 3. Tính toán các lần lặp
     val interval = this.repeatInterval ?: 1
     val unit = this.repeatUnit ?: "Ngày"
 

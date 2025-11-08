@@ -29,6 +29,8 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +53,7 @@ import java.util.Locale
 
 import java.time.temporal.ChronoUnit
 
-// ---------------------- Cấu hình / dữ liệu tĩnh ----------------------
+
 
 private val eventColors = listOf(
     Color(0xFFFFAB7F), Color(0xFFF6E788), Color(0xFF9EE07F), Color(0xFF7FD1C5),
@@ -67,10 +69,8 @@ private val reminderOptions = listOf(
 
 private val calendarTypeOptions = listOf("Cá nhân", "Công việc", "Sinh nhật", "Ngày lễ")
 
-// Đơn vị lặp lại cho dialog mới
 private val repeatUnitOptions = listOf("Ngày", "Tuần", "Tháng", "Năm")
 
-// --------------------------- Màn hình chính ---------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +79,6 @@ fun AddEventScreen(
     selectedDate: LocalDate,
     onSaveEvent: (Event) -> Unit
 ) {
-    // --- State form cơ bản ---
     var title by remember { mutableStateOf("") }
     var isAllDay by remember { mutableStateOf(false) }
     var startDate by remember { mutableStateOf(selectedDate) }
@@ -90,28 +89,24 @@ fun AddEventScreen(
     var calendarType by remember { mutableStateOf(calendarTypeOptions[0]) }
     var selectedColor by remember { mutableStateOf<Color?>(null) }
 
-    // --- State lặp lại (mới) ---
-    var isRepeating by remember { mutableStateOf(false) } // Kích hoạt/tắt lặp lại
-    var repeatFrequency by remember { mutableStateOf("Ngày") } // Hàng ngày, hàng tuần...
-    var repeatInterval by remember { mutableStateOf(1) } // Lặp lại mỗi N (ngày/tuần...)
-    var repeatEndDateLabel by remember { mutableStateOf("Vô tận") } // Chuỗi hiển thị
-    var repeatActualEndDate by remember { mutableStateOf<LocalDate?>(null) } // Ngày kết thúc thật
+    var isRepeating by remember { mutableStateOf(false) }
+    var repeatFrequency by remember { mutableStateOf("Ngày") }
+    var repeatInterval by remember { mutableStateOf(1) }
+    var repeatEndDateLabel by remember { mutableStateOf("Vô tận") }
+    var repeatActualEndDate by remember { mutableStateOf<LocalDate?>(null) }
 
-    // --- Dialog flags ---
     var showColorPicker by remember { mutableStateOf(false) }
     var showReminderDialog by remember { mutableStateOf(false) }
     var showCustomReminderDialog by remember { mutableStateOf(false) }
     var showCalendarTypeDialog by remember { mutableStateOf(false) }
-    var showRepeatSettingsDialog by remember { mutableStateOf(false) } // Đã đổi tên
+    var showRepeatSettingsDialog by remember { mutableStateOf(false) }
 
-    // --- Formatters / Context ---
     val viDateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("vi", "VN")) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val zone = remember { ZoneId.systemDefault() }
     val ctx = LocalContext.current
     val swatch = selectedColor ?: Color.Gray
 
-    // --- Native date pickers cho startDate/endDate ---
     fun showStartDatePicker() {
         DatePickerDialog(
             ctx,
@@ -166,7 +161,6 @@ fun AddEventScreen(
                                 color = selectedColor,
                                 reminderMinutes = reminderLabel.toMinutesOrNull(),
                                 calendarType = calendarType,
-                                // Lặp lại (mới) — nếu không lặp lại thì để null
                                 repeatInterval = if (!isRepeating) null else repeatInterval,
                                 repeatUnit = if (!isRepeating) null else repeatFrequency,
                                 repeatEndDate = if (!isRepeating || repeatEndDateLabel == "Vô tận") null else repeatActualEndDate
@@ -188,7 +182,6 @@ fun AddEventScreen(
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Tiêu đề + màu
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
@@ -214,12 +207,10 @@ fun AddEventScreen(
             }
             HorizontalDivider()
 
-            // Cả ngày
             EventOptionRow(Icons.Default.Schedule, "Cả ngày") {
                 Switch(checked = isAllDay, onCheckedChange = { isAllDay = it })
             }
 
-            // Ngày / Giờ
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -266,13 +257,12 @@ fun AddEventScreen(
                         Text(
                             endTime.format(timeFormatter),
                             style = MaterialTheme.typography.titleLarge, fontSize = 20.sp,
-                            // *** DÒNG CODE SỬA LỖI 'picked' LÀ DÒNG DƯỚI ĐÂY ***
                             modifier = Modifier.clickable {
-                                openTimePicker(endTime) { picked -> // <--- Đã thêm lại hàm bọc này
+                                openTimePicker(endTime) { picked ->
                                     endTime =
                                         if (startDate == endDate && picked.isBefore(startTime)) startTime.plusHours(1)
                                         else picked
-                                } // <--- Và dấu ngoặc này
+                                }
                             }
                         )
                     }
@@ -280,7 +270,6 @@ fun AddEventScreen(
             }
             HorizontalDivider()
 
-            // Lời nhắc
             EventOptionRowSelectable(
                 icon = Icons.Default.Notifications, text = "Lời nhắc", value = reminderLabel ?: "Thêm",
                 onClick = { showReminderDialog = true },
@@ -295,14 +284,12 @@ fun AddEventScreen(
                 }
             )
 
-            // Báo động toàn màn hình (demo)
             EventOptionRow(Icons.Default.Alarm, "Báo động toàn màn hình") {
                 Text("PRO", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.width(8.dp))
                 Switch(checked = false, onCheckedChange = {}, enabled = false)
             }
 
-            // Lặp lại (ĐÃ THAY ĐỔI)
             EventOptionRowSelectable(
                 icon = Icons.Default.Repeat,
                 text = "Lặp lại",
@@ -317,11 +304,10 @@ fun AddEventScreen(
                     }
                     "Mỗi $intervalText$unitText"
                 } else "Không lặp lại",
-                onClick = { showRepeatSettingsDialog = true } // Đã đổi tên dialog
+                onClick = { showRepeatSettingsDialog = true }
             )
 
 
-            // Lịch
             EventOptionRowSelectable(
                 icon = Icons.Default.CalendarToday, text = "Lịch", value = calendarType,
                 onClick = { showCalendarTypeDialog = true },
@@ -331,7 +317,6 @@ fun AddEventScreen(
             Spacer(Modifier.height(32.dp))
         }
 
-        // --------------------- Dialogs ---------------------
 
         if (showColorPicker) {
             ColorPickerDialog(
@@ -389,9 +374,8 @@ fun AddEventScreen(
             )
         }
 
-        // Dialog lặp lại MỚI (ĐÃ THAY THẾ)
-        if (showRepeatSettingsDialog) { // Đã đổi tên biến flag
-            RepeatSettingsDialog( // Đã đổi tên Composable
+        if (showRepeatSettingsDialog) {
+            RepeatSettingsDialog(
                 initialIsRepeating = isRepeating,
                 initialFrequency = repeatFrequency,
                 initialInterval = repeatInterval,
@@ -411,7 +395,6 @@ fun AddEventScreen(
     }
 }
 
-// --------------------- Composables phụ trợ ---------------------
 
 @Composable
 private fun EventOptionRow(
@@ -450,7 +433,7 @@ private fun EventOptionRowSelectable(
     }
 }
 
-// Chọn màu
+
 @Composable
 private fun ColorPickerDialog(
     availableColors: List<Color>,
@@ -498,7 +481,7 @@ private fun ColorItem(color: Color, isSelected: Boolean, onClick: () -> Unit) {
     }
 }
 
-// Dialog chọn 1 item (tái dùng cho Lời nhắc / Loại lịch)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderSelectionDialog(
@@ -548,7 +531,7 @@ fun ReminderSelectionDialog(
     )
 }
 
-// Dialog “Nhắc nhở tùy chỉnh”
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomReminderDialog(
@@ -621,14 +604,14 @@ fun CustomReminderDialog(
     )
 }
 
-// Dialog LẶP LẠI MỚI - Theo giao diện ảnh thứ 2
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepeatSettingsDialog(
     initialIsRepeating: Boolean,
-    initialFrequency: String, // "Ngày", "Tuần", "Tháng", "Năm"
+    initialFrequency: String,
     initialInterval: Int,
-    initialEndDateLabel: String, // "Vô tận", "Đến một ngày: ..."
+    initialEndDateLabel: String,
     initialActualEndDate: LocalDate?,
     onDismiss: () -> Unit,
     onConfirm: (
@@ -639,12 +622,11 @@ fun RepeatSettingsDialog(
         actualEndDate: LocalDate?
     ) -> Unit
 ) {
-    val ctx = LocalContext.current
     val zone = remember { ZoneId.systemDefault() }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("vi", "VN")) }
 
     var isRepeatingState by remember { mutableStateOf(initialIsRepeating) }
-    var selectedFrequency by remember { mutableStateOf(initialFrequency) } // "Ngày", "Tuần", "Tháng", "Năm"
+    var selectedFrequency by remember { mutableStateOf(initialFrequency) }
     var interval by remember { mutableStateOf(initialInterval.toString()) }
     var endDateLabel by remember { mutableStateOf(initialEndDateLabel) }
     var actualEndDate by remember { mutableStateOf(initialActualEndDate) }
@@ -652,8 +634,10 @@ fun RepeatSettingsDialog(
     var showEndDateDialog by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = actualEndDate?.atStartOfDay(zone)?.toInstant()?.toEpochMilli()
-            ?: LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli()
+            ?: LocalDate.now().atStartOfDay(zone).toInstant()?.toEpochMilli()
     )
+
+    var showIntervalDialog by remember { mutableStateOf(false) }
 
 
     Dialog(onDismissRequest = onDismiss) {
@@ -673,44 +657,41 @@ fun RepeatSettingsDialog(
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // Các lựa chọn tần suất (Hàng ngày, Hàng tuần...)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val frequencies = listOf("Ngày", "Tuần", "Tháng", "Năm")
                     frequencies.forEach { freq ->
-// Code mới đã sửa lỗi
                         FilterChip(
                             selected = (selectedFrequency == freq),
                             onClick = { selectedFrequency = freq },
-                            label = { Text("Hàng $freq".lowercase()) },
-                            enabled = isRepeatingState, // 'enabled' giờ được đặt ở đây
+                            label = { Text("Hàng ${freq.lowercase()}") },
+                            enabled = isRepeatingState,
+
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = RedPrimary.copy(alpha = 0.1f),
                                 selectedLabelColor = RedPrimary,
-                                // Bạn có thể tùy chỉnh màu cho trạng thái không được chọn (unselected) và bị vô hiệu hóa (disabled)
                                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             ),
+
                             border = FilterChipDefaults.filterChipBorder(
-                                selected = (selectedFrequency == freq), // 'selected' được truyền vào đây
-                                enabled = isRepeatingState, // 'enabled' cũng được truyền vào đây
+                                selected = (selectedFrequency == freq),
+                                enabled = isRepeatingState,
                                 selectedBorderColor = RedPrimary,
                                 borderColor = Color.Transparent,
+                                disabledBorderColor = Color.Transparent,
                                 borderWidth = 1.dp
                             ),
                             modifier = Modifier.weight(1f)
                         )
-
                     }
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // Lặp lại mỗi N (Ngày/Tuần/Tháng/Năm)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(enabled = isRepeatingState) {
-                            // Mở dialog riêng để nhập số và chọn đơn vị (nếu cần phức tạp)
-                            // Hiện tại dùng TextField và Text
+                            showIntervalDialog = true
                         }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -721,13 +702,12 @@ fun RepeatSettingsDialog(
                         color = if (isRepeatingState) LocalContentColor.current else Color.Gray
                     )
                     Text(
-                        "$interval $selectedFrequency >",
+                        "$interval ${selectedFrequency.lowercase()} >",
                         color = if (isRepeatingState) RedPrimary else Color.Gray
                     )
                 }
                 HorizontalDivider()
 
-                // Sự lặp lại kết thúc
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -749,7 +729,6 @@ fun RepeatSettingsDialog(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Nút HỦY / LÀM XONG
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -777,7 +756,18 @@ fun RepeatSettingsDialog(
         }
     }
 
-    // Dialog chọn ngày kết thúc
+    if (showIntervalDialog) {
+        IntervalPickerDialog(
+            unit = selectedFrequency,
+            initialInterval = interval.toIntOrNull() ?: 1,
+            onDismiss = { showIntervalDialog = false },
+            onConfirm = { newInterval ->
+                interval = newInterval.toString()
+                showIntervalDialog = false
+            }
+        )
+    }
+
     if (showEndDateDialog) {
         DatePickerDialog(
             onDismissRequest = { showEndDateDialog = false },
@@ -792,9 +782,6 @@ fun RepeatSettingsDialog(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    // Tùy chọn: Đặt lại về "Vô tận" nếu hủy
-                    // actualEndDate = null
-                    // endDateLabel = "Vô tận"
                     showEndDateDialog = false
                 }) { Text("HỦY") }
             },
@@ -806,7 +793,6 @@ fun RepeatSettingsDialog(
 }
 
 
-// -------------------------- Helpers (Không đổi) --------------------------
 
 private fun String?.toMinutesOrNull(): Int? {
     if (this == null) return null
@@ -864,14 +850,13 @@ private fun parseCustomReminder(label: String?): Pair<Int, String> {
 
 @Composable
 private fun IntervalPickerDialog(
-    unit: String, // "Ngày", "Tuần", ...
+    unit: String,
     initialInterval: Int,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
     var selectedInterval by remember { mutableStateOf(initialInterval) }
-    val options = (1..30).toList() // Tạo danh sách từ 1 đến 30
-    // Tự động cuộn đến mục đã chọn ban đầu
+    val options = (1..30).toList()
     val scrollState = rememberLazyListState(
         initialFirstVisibleItemIndex = (initialInterval - 1).coerceAtLeast(0)
     )
@@ -892,7 +877,7 @@ private fun IntervalPickerDialog(
                     state = scrollState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 280.dp) // Giới hạn chiều cao
+                        .heightIn( max = 280.dp)
                 ) {
                     items(options) { number ->
                         val isSelected = number == selectedInterval
