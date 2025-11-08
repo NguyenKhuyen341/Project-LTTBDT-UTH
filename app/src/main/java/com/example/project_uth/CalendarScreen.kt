@@ -19,6 +19,8 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -312,13 +314,13 @@ fun CalendarMainScreen(
     allEvents: SnapshotStateList<Event>,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    // State nội bộ giữ ngày đang chọn, khởi tạo từ MainActivity
     var selectedDate by remember { mutableStateOf(initialSelectedDate) }
 
-    // Lọc sự kiện của ngày đang chọn
     val dayEvents by remember(allEvents.size, selectedDate) {
         derivedStateOf {
-            allEvents.filter { it.date.isEqual(selectedDate) }
+            allEvents.filter { event ->
+                event.isOccurringOn(selectedDate)
+            }
         }
     }
 
@@ -332,20 +334,74 @@ fun CalendarMainScreen(
                 .padding(pv)
                 .background(Color(0xFFF9F9F9))
         ) {
-            // Lịch tháng
             CalendarView(
                 selectedDate = selectedDate,
                 onDateSelected = { newDate ->
-                    selectedDate = newDate      // cập nhật UI
-                    onDateSelected(newDate)     // báo về MainActivity để giữ state tổng
+                    selectedDate = newDate
+                    onDateSelected(newDate)
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            // Danh sách sự kiện của ngày
             EventList(
                 events = dayEvents,
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+// --- CHUYỂN HÀM RA ĐÂY ---
+// Đặt hàm này ở cuối file, bên ngoài tất cả các composable khác.
+// Bạn có thể giữ 'private' nếu chỉ muốn dùng trong file CalendarScreen.kt
+private fun Event.isOccurringOn(selectedDate: LocalDate): Boolean {
+    // 1. Nếu sự kiện không lặp lại
+    if (!this.isRepeating()) {
+        if (this.endDate == null) {
+            return this.date.isEqual(selectedDate)
+        } else {
+            // Sự kiện kéo dài nhiều ngày (không lặp lại)
+            return !selectedDate.isBefore(this.date) && !selectedDate.isAfter(this.endDate)
+        }
+    }
+
+    // 2. Nếu là sự kiện lặp lại
+    val startDate = this.date
+    val repeatEndDate = this.repeatEndDate
+
+    if (selectedDate.isBefore(startDate)) return false
+    if (repeatEndDate != null && selectedDate.isAfter(repeatEndDate)) return false
+
+    // 3. Tính toán các lần lặp
+    val interval = this.repeatInterval ?: 1
+    val unit = this.repeatUnit ?: "Ngày"
+
+    try {
+        when (unit) {
+            "Ngày" -> {
+                val daysBetween = ChronoUnit.DAYS.between(startDate, selectedDate)
+                return daysBetween % interval == 0L
+            }
+            "Tuần" -> {
+                val sameDayOfWeek = startDate.dayOfWeek == selectedDate.dayOfWeek
+                if (!sameDayOfWeek) return false
+                val weeksBetween = ChronoUnit.WEEKS.between(startDate, selectedDate)
+                return weeksBetween % interval == 0L
+            }
+            "Tháng" -> {
+                val sameDayOfMonth = startDate.dayOfMonth == selectedDate.dayOfMonth
+                if (!sameDayOfMonth) return false
+                val monthsBetween = ChronoUnit.MONTHS.between(startDate, selectedDate)
+                return monthsBetween % interval == 0L
+            }
+            "Năm" -> {
+                val sameMonthAndDay = (startDate.month == selectedDate.month && startDate.dayOfMonth == selectedDate.dayOfMonth)
+                if (!sameMonthAndDay) return false
+                val yearsBetween = ChronoUnit.YEARS.between(startDate, selectedDate)
+                return yearsBetween % interval == 0L
+            }
+            else -> return startDate.isEqual(selectedDate)
+        }
+    } catch (e: Exception) {
+        return startDate.isEqual(selectedDate)
     }
 }

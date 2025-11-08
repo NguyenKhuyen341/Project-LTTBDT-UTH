@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 
+
 data class Event(
 
     val date: LocalDate,
@@ -25,4 +26,5 @@ data class Event(
     val repeatUnit: String? = null,
     val repeatEndDate: LocalDate? = null,
 
-)
+    )
+fun Event.isRepeating(): Boolean = repeatInterval != null && repeatUnit != null

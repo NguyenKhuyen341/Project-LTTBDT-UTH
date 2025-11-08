@@ -11,19 +11,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-// Dark scheme
+
 private val DarkColorScheme = darkColorScheme(
     primary = RedPrimary,
     secondary = PurpleGrey80,
     tertiary = Pink80
 )
 
-// Light scheme
 private val LightColorScheme = lightColorScheme(
     primary = RedPrimary,
     secondary = PurpleGrey40,
     tertiary = Pink40
-    // Có thể override thêm nếu cần
 )
 
 @Composable
