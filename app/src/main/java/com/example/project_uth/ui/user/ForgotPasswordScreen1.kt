@@ -54,7 +54,7 @@ fun ForgotPasswordScreen1(navController: NavController) {
                     // THAY THẾ AVATAR BẰNG ICON LỊCH
                     // ===================================
                     Image(
-                        painter = painterResource(id = R.drawable.calander), // Đảm bảo ID này đúng
+                        painter = painterResource(id = R.drawable.calander),
                         contentDescription = "Calendar Icon",
                         modifier = Modifier
                             .size(255.dp) // Kích thước giống Login/Register

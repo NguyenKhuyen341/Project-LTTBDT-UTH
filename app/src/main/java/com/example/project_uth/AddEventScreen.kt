@@ -50,6 +50,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.graphics.toArgb
 
 import java.time.temporal.ChronoUnit
 
@@ -158,7 +159,7 @@ fun AddEventScreen(
                                 isAllDay = isAllDay,
                                 startTime = if (isAllDay) null else startTime,
                                 endTime = if (isAllDay) null else endTime,
-                                color = selectedColor,
+                                colorInt = selectedColor?.toArgb(),
                                 reminderMinutes = reminderLabel.toMinutesOrNull(),
                                 calendarType = calendarType,
                                 repeatInterval = if (!isRepeating) null else repeatInterval,

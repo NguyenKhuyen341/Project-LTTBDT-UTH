@@ -203,7 +203,7 @@ private fun EventList(events: List<Event>, modifier: Modifier = Modifier,onEvent
 
 @Composable
 private fun EventCard(event: Event,modifier: Modifier = Modifier) {
-    val cardColor = event.color ?: MaterialTheme.colorScheme.surfaceVariant
+    val cardColor = event.colorInt?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     Surface(
@@ -326,7 +326,7 @@ private fun generateCalendarDays(currentMonth: YearMonth): List<LocalDate?> {
 fun CalendarMainScreen(
     navController: NavController,
     initialSelectedDate: LocalDate,
-    allEvents: SnapshotStateList<Event>,
+    allEvents: List<Event>,
     onDateSelected: (LocalDate) -> Unit,
     onDeleteEvent: (Event) -> Unit,
     onUpdateEvent: (Event, Event) -> Unit
@@ -336,7 +336,7 @@ fun CalendarMainScreen(
     var showEventSheet by remember { mutableStateOf(false) }
     var eventToSheet by remember { mutableStateOf<Event?>(null) }
 
-    val dayEvents by remember(allEvents.size, selectedDate) {
+    val dayEvents by remember(allEvents, selectedDate) {
         derivedStateOf {
             allEvents.filter { event ->
                 event.isOccurringOn(selectedDate)
