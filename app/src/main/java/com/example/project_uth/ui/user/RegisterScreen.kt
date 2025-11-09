@@ -3,6 +3,21 @@ package com.example.project_uth.ui.user
 // Import cho Preview (LocalContext)
 import androidx.compose.ui.platform.LocalContext
 
+// ==================================================
+// CÁC IMPORT MỚI
+// ==================================================
+import android.util.Log
+import android.util.Patterns // <-- 1. THÊM IMPORT ĐỂ KIỂM TRA EMAIL
+import android.widget.Toast
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import java.lang.Exception
+// ==================================================
+
 // Các import cơ bản cho UI
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -13,7 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color // <-- 2. THÊM IMPORT ĐỂ SỬ DỤNG MÀU TRẮNG
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,6 +47,22 @@ fun RegisterScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    // 1. Trạng thái Loading
+    var isLoading by remember { mutableStateOf(false) }
+
+    // 2. Trạng thái hiển thị Hộp thoại
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogTitle by remember { mutableStateOf("") }
+    var dialogMessage by remember { mutableStateOf("") }
+    var isSuccessDialog by remember { mutableStateOf(false) }
+    // ==================================================
+
+    // Lấy đối tượng Firebase Auth
+    val auth = FirebaseAuth.getInstance()
+    // Lấy Context để dùng cho Toast (nếu cần)
+    val context = LocalContext.current
+
 
     // Nền tối bao bọc (Tái sử dụng từ LoginScreen)
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF2D2D2D)) {
@@ -68,31 +99,33 @@ fun RegisterScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Trường Tên người dùng (đã xóa 'enabled = !isLoading')
+                    // Trường Tên người dùng (vô hiệu hóa khi loading)
                     OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
                         label = { Text("Tên người dùng") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Trường Email (đã xóa 'enabled = !isLoading')
+                    // Trường Email (vô hiệu hóa khi loading)
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Trường Mật khẩu (đã xóa 'enabled = !isLoading')
+                    // Trường Mật khẩu (vô hiệu hóa khi loading)
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -100,12 +133,13 @@ fun RegisterScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(), // Để ẩn mật khẩu
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Trường Xác nhận mật khẩu (đã xóa 'enabled = !isLoading')
+                    // Trường Xác nhận mật khẩu (vô hiệu hóa khi loading)
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
@@ -113,35 +147,142 @@ fun RegisterScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
                     Spacer(modifier = Modifier.height(24.dp)) // Khoảng cách với nút Đăng ký
 
-                    // Nút Đăng ký (Đã trả về trạng thái ban đầu)
+                    // Nút Đăng ký (Đã tích hợp Firebase)
                     Button(
                         onClick = {
-                            /* TODO: Xử lý đăng ký (chưa có Firebase) */
-                            // Ví dụ: chỉ cần quay lại login
-                            // navController.navigate("login")
+                            val emailTrimmed = email.trim()
+                            val passwordTrimmed = password.trim()
+
+                            // 1. Kiểm tra (Validate) dữ liệu
+                            if (username.isBlank() || emailTrimmed.isBlank() || passwordTrimmed.isBlank()) {
+                                Toast.makeText(context, "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                                return@Button // Dừng lại
+                            }
+
+                            // ==================================================
+                            // RÀNG BUỘC MỚI (CLIENT-SIDE)
+                            // ==================================================
+                            if (passwordTrimmed.length < 8) {
+                                Toast.makeText(context, "Mật khẩu phải có ít nhất 8 ký tự", Toast.LENGTH_SHORT).show()
+                                return@Button // Dừng lại
+                            }
+                            if (!Patterns.EMAIL_ADDRESS.matcher(emailTrimmed).matches()) {
+                                Toast.makeText(context, "Định dạng email không hợp lệ", Toast.LENGTH_SHORT).show()
+                                return@Button // Dừng lại
+                            }
+                            // ==================================================
+
+                            if (passwordTrimmed != confirmPassword.trim()) {
+                                Toast.makeText(context, "Mật khẩu không khớp", Toast.LENGTH_SHORT).show()
+                                return@Button // Dừng lại
+                            }
+
+                            // 2. Bắt đầu Loading
+                            isLoading = true
+
+                            // 3. Gọi API của Firebase để tạo người dùng
+                            auth.createUserWithEmailAndPassword(emailTrimmed, passwordTrimmed)
+                                .addOnCompleteListener { task ->
+                                    isLoading = false // Dừng loading
+                                    if (task.isSuccessful) {
+                                        // 4. Nếu thành công -> Chuẩn bị hộp thoại thành công
+                                        Log.d("FIREBASE_AUTH", "Tạo người dùng thành công!")
+                                        dialogTitle = "Thành công!"
+                                        dialogMessage = "Đăng ký tài khoản thành công. Bạn sẽ được chuyển đến trang đăng nhập."
+                                        isSuccessDialog = true
+                                        showDialog = true // Mở hộp thoại
+
+                                    } else {
+                                        // 5. Nếu thất bại -> Chuẩn bị hộp thoại lỗi
+                                        Log.w("FIREBASE_AUTH", "Tạo người dùng thất bại", task.exception)
+                                        dialogTitle = "Đăng ký thất bại"
+                                        dialogMessage = getFirebaseAuthErrorMessage(task.exception) // "Dịch" lỗi
+                                        isSuccessDialog = false
+                                        showDialog = true // Mở hộp thoại
+                                    }
+                                }
                         },
+                        enabled = !isLoading, // Vô hiệu hóa nút khi đang loading
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF424242)) // Màu nền nút
                     ) {
-                        // Chỉ hiển thị chữ, không có vòng xoay loading
-                        Text("Đăng kí", color = Color.White)
+                        // Hiển thị vòng xoay hoặc chữ
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White, // Màu vòng xoay
+                                strokeWidth = 3.dp
+                            )
+                        } else {
+                            Text("Đăng kí", color = Color.White)
+                        }
                     }
 
-                    // Đã xóa hộp thoại AlertDialog
+                    // ==================================================
+                    // HỘP THOẠI THÔNG BÁO (ĐÃ SỬA MÀU)
+                    // ==================================================
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                // Xử lý khi người dùng bấm ra ngoài hộp thoại
+                                showDialog = false
+                                if (isSuccessDialog) {
+                                    // Nếu là thành công, vẫn điều hướng về login
+                                    navController.navigate("login") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            },
+                            title = { Text(dialogTitle) },
+                            text = { Text(dialogMessage) },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        showDialog = false // Đóng hộp thoại
+                                        if (isSuccessDialog) {
+                                            // Nếu là thành công, điều hướng về login
+                                            navController.navigate("login") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        }
+                                        // Nếu thất bại, người dùng ở lại để sửa lỗi
+                                    }
+                                ) {
+                                    Text("OK")
+                                }
+                            },
+                            // SỬA ĐỔI: THÊM DÒNG NÀY ĐỂ HỘP THOẠI LUÔN LÀ MÀU TRẮNG
+                            containerColor = Color.White
+                        )
+                    }
+                    // ==================================================
                 }
             }
         }
     }
 }
 
-// Đã xóa hàm private fun getFirebaseAuthErrorMessage(...)
+/**
+ * Hàm trợ giúp (helper) "dịch" lỗi Firebase sang Tiếng Việt
+ */
+private fun getFirebaseAuthErrorMessage(exception: Exception?): String {
+    return when (exception) {
+        // Lỗi này của Firebase là 6 ký tự, nhưng logic 8 ký tự của chúng ta sẽ chặn trước
+        is FirebaseAuthWeakPasswordException -> "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
+        is FirebaseAuthUserCollisionException -> "Email này đã được sử dụng. Vui lòng chọn email khác."
+        // Lỗi "email badly formatted" giờ sẽ bị chặn bởi logic phía client
+        else -> exception?.message ?: "Đã xảy ra lỗi không xác định. Vui lòng thử lại."
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable

@@ -41,37 +41,63 @@ import java.util.Locale
 import java.time.temporal.ChronoUnit
 import androidx.compose.material.icons.filled.Person
 
+// ==================================================
+// THÊM CÁC IMPORT MỚI
+// ==================================================
+import coil.compose.AsyncImage // 1. Thư viện Coil để tải ảnh
+import com.google.firebase.auth.FirebaseAuth // 2. Thư viện Auth
+// ==================================================
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTopAppBar(navController: NavController) {
+
+    // Lấy người dùng hiện tại từ Firebase
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
     TopAppBar(
         title = { /* trống */ },
-        // ===================================
-        // BIỂU TƯỢNG 3 GẠCH (MENU) ĐÃ BỊ XÓA
-        // ===================================
-        // navigationIcon = {
-        //    IconButton(onClick = { /* mở menu */ }) { Icon(Icons.Default.Menu, contentDescription = "Menu") }
-        // },
-        // ===================================
+        // navigationIcon đã bị xóa
         actions = {
             IconButton(onClick = { /* search */ }) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(8.dp))
+
+            // ==================================================
+            // SỬA ĐỔI NÚT AVATAR
+            // ==================================================
             IconButton(
-                // 3. Hành động: Điều hướng đến trang "login"
-                onClick = { navController.navigate("login") },
+                // Khi bấm vào, đăng xuất và quay về trang login
+                onClick = {
+                    FirebaseAuth.getInstance().signOut() // Đăng xuất
+                    navController.navigate("login") { // Quay về login
+                        popUpTo(0) // Xóa sạch back stack
+                    }
+                },
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
                     .border(1.dp, Color.Gray, CircleShape)
             ) {
-                // 1. Dùng Icon người mặc định
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Đăng nhập" // 2. Thay bằng nút bấm (đây là contentDescription)
-                )
+                // Nếu người dùng (từ Google) có ảnh (photoUrl), thì dùng AsyncImage của Coil
+                if (currentUser != null && currentUser.photoUrl != null) {
+                    AsyncImage(
+                        model = currentUser.photoUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape) // Hiển thị ảnh
+                    )
+                } else {
+                    // Nếu không (hoặc đăng nhập bằng email), dùng icon mặc định
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Đăng nhập"
+                    )
+                }
             }
+            // ==================================================
+
             Spacer(Modifier.width(16.dp))
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
