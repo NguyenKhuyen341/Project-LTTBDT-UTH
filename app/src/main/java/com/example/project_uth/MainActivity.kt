@@ -15,12 +15,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.project_uth.ui.theme.Project_uthTheme
 import java.time.LocalDate
 import java.time.LocalTime
-
+import com.example.project_uth.ui.user.ForgotPasswordScreen1
+import com.example.project_uth.ui.user.ForgotPasswordScreen2
+import com.example.project_uth.ui.user.ForgotPasswordScreen3
+import com.example.project_uth.ui.user.LoginScreen
+import com.example.project_uth.ui.user.RegisterScreen
 
 class MainActivity : ComponentActivity() {
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -37,7 +38,10 @@ class MainActivity : ComponentActivity() {
                         mutableStateListOf<Event>()
                     }
 
+                    // Đổi startDestination thành "login"
                     NavHost(navController = nav, startDestination = "calendar") {
+
+                        // Các route cho Lịch (Calendar) của bạn
                         composable("calendar") {
                             CalendarMainScreen(
                                 navController = nav,
@@ -47,8 +51,8 @@ class MainActivity : ComponentActivity() {
                                 onDeleteEvent = { event -> allEvents.remove(event) },
                                 onUpdateEvent = { oldEvent, newEvent -> val index = allEvents.indexOf(oldEvent);
                                     if (index != -1) {
-                                    allEvents[index] = newEvent
-                                } },
+                                        allEvents[index] = newEvent
+                                    } },
                             )
                         }
                         composable("add_event") {
@@ -57,6 +61,23 @@ class MainActivity : ComponentActivity() {
                                 selectedDate = selectedDate,
                                 onSaveEvent = { e -> allEvents.add(e) }
                             )
+                        }
+
+                        // 5 route cho các màn hình Xác thực (Auth)
+                        composable("login") {
+                            LoginScreen(navController = nav)
+                        }
+                        composable("register") {
+                            RegisterScreen(navController = nav)
+                        }
+                        composable("forgot_password_1") {
+                            ForgotPasswordScreen1(navController = nav)
+                        }
+                        composable("forgot_password_2") {
+                            ForgotPasswordScreen2(navController = nav)
+                        }
+                        composable("forgot_password_3") {
+                            ForgotPasswordScreen3(navController = nav)
                         }
                     }
                 }

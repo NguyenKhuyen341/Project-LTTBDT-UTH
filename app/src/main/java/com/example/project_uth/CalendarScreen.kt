@@ -39,25 +39,39 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.temporal.ChronoUnit
+import androidx.compose.material.icons.filled.Person
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTopAppBar() {
+private fun CalendarTopAppBar(navController: NavController) {
     TopAppBar(
         title = { /* trống */ },
-        navigationIcon = {
-            IconButton(onClick = { /* mở menu */ }) { Icon(Icons.Default.Menu, contentDescription = "Menu") }
-        },
+        // ===================================
+        // BIỂU TƯỢNG 3 GẠCH (MENU) ĐÃ BỊ XÓA
+        // ===================================
+        // navigationIcon = {
+        //    IconButton(onClick = { /* mở menu */ }) { Icon(Icons.Default.Menu, contentDescription = "Menu") }
+        // },
+        // ===================================
         actions = {
             IconButton(onClick = { /* search */ }) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(8.dp))
-            Image(
-                painter = painterResource(id = R.drawable.avatar_placeholder),
-                contentDescription = "Avatar",
-                modifier = Modifier.size(36.dp).clip(CircleShape).border(1.dp, Color.Gray, CircleShape)
-            )
+            IconButton(
+                // 3. Hành động: Điều hướng đến trang "login"
+                onClick = { navController.navigate("login") },
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, Color.Gray, CircleShape)
+            ) {
+                // 1. Dùng Icon người mặc định
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Đăng nhập" // 2. Thay bằng nút bấm (đây là contentDescription)
+                )
+            }
             Spacer(Modifier.width(16.dp))
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -331,7 +345,7 @@ fun CalendarMainScreen(
     }
 
     Scaffold(
-        topBar = { CalendarTopAppBar() },
+        topBar = { CalendarTopAppBar(navController = navController) }, // <-- Đã truyền navController
         bottomBar = { CalendarBottomNavNewStyle(navController = navController) }
     ) { pv ->
         Column(
@@ -383,8 +397,8 @@ fun CalendarMainScreen(
 
         }
 
-        }
     }
+}
 
 
 
