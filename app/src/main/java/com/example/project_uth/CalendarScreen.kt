@@ -40,6 +40,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.temporal.ChronoUnit
 import androidx.compose.material.icons.filled.Person
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -249,31 +251,64 @@ private fun AvatarStack() {
 }
 
 @Composable
-private fun CalendarBottomNavNewStyle(
+fun CalendarBottomNavNewStyle(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    BottomAppBar(modifier = modifier, containerColor = Color.Transparent, tonalElevation = 0.dp) {
+    // Lấy route hiện tại để biết tab nào đang chọn
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    BottomAppBar(
+        modifier = modifier,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp
+    ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(24.dp),
             color = Color.White,
             shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                NewBottomNavItem(Icons.Default.CalendarMonth, "Lịch", selected = true) {}
-                NewBottomNavItem(Icons.AutoMirrored.Filled.Notes, "Ghi chú") {}
+                NewBottomNavItem(
+                    Icons.Default.CalendarMonth,
+                    "Lịch",
+                    selected = currentRoute == "calendar"
+                ) { navController.navigate("calendar") }
+
+                NewBottomNavItem(
+                    Icons.AutoMirrored.Filled.Notes,
+                    "Ghi chú",
+                    selected = currentRoute == "notes"
+                ) { navController.navigate("notes") }
+
                 NewAddButton { navController.navigate("add_event") }
-                NewBottomNavItem(Icons.Default.Checklist, "Nhiệm vụ") {}
-                NewBottomNavItem(Icons.Default.Settings, "Cài đặt") {}
+
+                NewBottomNavItem(
+                    Icons.Default.Checklist,
+                    "Nhiệm vụ",
+                    selected = currentRoute == "tasks"
+                ) { navController.navigate("tasks") }
+
+                NewBottomNavItem(
+                    Icons.Default.Settings,
+                    "Cài đặt",
+                    selected = currentRoute == "settings"
+                ) { navController.navigate("settings") }
             }
         }
     }
 }
+
+
 
 @Composable
 private fun NewAddButton(onClick: () -> Unit) {
