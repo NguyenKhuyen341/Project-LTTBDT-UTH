@@ -81,7 +81,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // --- Màn hình Thêm sự kiện ---
                         composable("add_event") {
                             AddEventScreen(
                                 navController = nav,
@@ -90,24 +89,19 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // --- Màn hình Ghi chú ---
                         composable("notes") {
                             val savedNotes = remember { mutableStateListOf<Note>() }
                             NotesScreen(navController = nav, savedNotes = savedNotes)
                         }
 
 
-                        // --- Màn hình Nhiệm vụ ---
                         composable("tasks") {
                             TasksScreen(navController = nav)
                         }
-                        // --- Màn hình settings---
                         composable("settings") {
                             SettingsScreen(navController = nav)
                         }
 
-
-                        // --- Các màn hình đăng nhập / đăng ký ---
                         composable("login") {
                             LoginScreen(navController = nav)
                         }

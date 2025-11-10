@@ -8,7 +8,6 @@ import java.time.LocalTime
 
 class Converters {
 
-    // --- Chuyển đổi cho LocalDate ---
     @TypeConverter
     fun fromEpochDay(value: Long?): LocalDate? {
         return value?.let { LocalDate.ofEpochDay(it) }
@@ -18,7 +17,7 @@ class Converters {
         return date?.toEpochDay()
     }
 
-    // --- Chuyển đổi cho LocalTime ---
+
     @TypeConverter
     fun fromSecondOfDay(value: Int?): LocalTime? {
         return value?.let { LocalTime.ofSecondOfDay(it.toLong()) }
@@ -28,8 +27,7 @@ class Converters {
         return time?.toSecondOfDay()
     }
 
-    // --- Chuyển đổi cho List<LocalDate> (dùng cho exceptionDates) ---
-    // Biến nó thành một String, ví dụ: "19320,19321,19322"
+
     @TypeConverter
     fun fromEpochDayString(value: String?): List<LocalDate> {
         if (value.isNullOrEmpty()) return emptyList()
