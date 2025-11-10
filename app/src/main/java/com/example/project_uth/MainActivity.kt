@@ -13,11 +13,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.project_uth.ui.theme.Project_uthTheme
+import com.example.project_uth.ui.user.ChangePasswordScreen
 import java.time.LocalDate
 import java.time.LocalTime
 import com.example.project_uth.ui.user.ForgotPasswordScreen1
-import com.example.project_uth.ui.user.ForgotPasswordScreen2
-import com.example.project_uth.ui.user.ForgotPasswordScreen3
 import com.example.project_uth.ui.user.LoginScreen
 import com.example.project_uth.ui.user.RegisterScreen
 
@@ -73,11 +72,8 @@ class MainActivity : ComponentActivity() {
                         composable("forgot_password_1") {
                             ForgotPasswordScreen1(navController = nav)
                         }
-                        composable("forgot_password_2") {
-                            ForgotPasswordScreen2(navController = nav)
-                        }
-                        composable("forgot_password_3") {
-                            ForgotPasswordScreen3(navController = nav)
+                        composable("change_password") {
+                            ChangePasswordScreen(navController = nav)
                         }
                     }
                 }

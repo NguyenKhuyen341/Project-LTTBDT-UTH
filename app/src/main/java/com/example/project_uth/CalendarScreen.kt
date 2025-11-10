@@ -24,7 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color // <-- Import này đã có
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,62 +41,99 @@ import java.util.Locale
 import java.time.temporal.ChronoUnit
 import androidx.compose.material.icons.filled.Person
 
-// ==================================================
-// THÊM CÁC IMPORT MỚI
-// ==================================================
-import coil.compose.AsyncImage // 1. Thư viện Coil để tải ảnh
-import com.google.firebase.auth.FirebaseAuth // 2. Thư viện Auth
-// ==================================================
+import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTopAppBar(navController: NavController) {
 
-    // Lấy người dùng hiện tại từ Firebase
     val currentUser = FirebaseAuth.getInstance().currentUser
+    var showMenu by remember { mutableStateOf(false) }
 
     TopAppBar(
         title = { /* trống */ },
-        // navigationIcon đã bị xóa
         actions = {
             IconButton(onClick = { /* search */ }) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(8.dp))
 
-            // ==================================================
-            // SỬA ĐỔI NÚT AVATAR
-            // ==================================================
-            IconButton(
-                // Khi bấm vào, đăng xuất và quay về trang login
-                onClick = {
-                    FirebaseAuth.getInstance().signOut() // Đăng xuất
-                    navController.navigate("login") { // Quay về login
-                        popUpTo(0) // Xóa sạch back stack
+            Box {
+                IconButton(
+                    onClick = {
+                        if (currentUser == null) {
+                            navController.navigate("login")
+                        } else {
+                            showMenu = true
+                        }
+                    },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.Gray, CircleShape)
+                ) {
+                    if (currentUser != null && currentUser.photoUrl != null) {
+                        AsyncImage(
+                            model = currentUser.photoUrl,
+                            contentDescription = "Avatar",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Tài khoản"
+                        )
                     }
-                },
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, Color.Gray, CircleShape)
-            ) {
-                // Nếu người dùng (từ Google) có ảnh (photoUrl), thì dùng AsyncImage của Coil
-                if (currentUser != null && currentUser.photoUrl != null) {
-                    AsyncImage(
-                        model = currentUser.photoUrl,
-                        contentDescription = "Avatar",
-                        modifier = Modifier.fillMaxSize().clip(CircleShape) // Hiển thị ảnh
+                }
+
+                // 2. MENU THẢ XUỐNG (SỬA Ở ĐÂY)
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }, // Bấm ra ngoài để tắt
+                    // ==================================================
+                    // SỬA ĐỔI: THÊM DÒNG NÀY ĐỂ ÉP NỀN TRẮNG
+                    // ==================================================
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    // Hiển thị thông tin người dùng (nếu có)
+                    if (currentUser != null) {
+                        DropdownMenuItem(
+                            text = { Text(currentUser.displayName ?: "Người dùng", fontWeight = FontWeight.Bold) },
+                            enabled = false, // Không cho bấm
+                            onClick = { }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(currentUser.email ?: "") },
+                            enabled = false, // Không cho bấm
+                            onClick = { }
+                        )
+                        Divider() // Dấu gạch ngang
+                    }
+
+                    // Nút "Đổi mật khẩu"
+                    DropdownMenuItem(
+                        text = { Text("Đổi mật khẩu") },
+                        onClick = {
+                            showMenu = false // Đóng menu
+                            navController.navigate("change_password") // Điều hướng
+                        }
                     )
-                } else {
-                    // Nếu không (hoặc đăng nhập bằng email), dùng icon mặc định
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Đăng nhập"
+
+                    // Nút Đăng xuất
+                    DropdownMenuItem(
+                        text = { Text("Đăng xuất") },
+                        onClick = {
+                            showMenu = false // Đóng menu
+                            FirebaseAuth.getInstance().signOut() // Đăng xuất
+                            navController.navigate("login") { // Quay về login
+                                popUpTo(0) // Xóa sạch back stack
+                            }
+                        }
                     )
                 }
             }
-            // ==================================================
 
             Spacer(Modifier.width(16.dp))
         },
@@ -283,7 +320,7 @@ private fun CalendarBottomNavNewStyle(
         Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = Color.White, // Nền đã là màu trắng
             shadowElevation = 8.dp
         ) {
             Row(
@@ -318,16 +355,31 @@ private fun NewAddButton(onClick: () -> Unit) {
 private fun NewBottomNavItem(
     icon: ImageVector, text: String, selected: Boolean = false, onClick: () -> Unit
 ) {
-    val selectedColor = Color(0xFFE91E63)
+    // Sửa màu hồng thành nền trắng, chữ và icon màu hồng (theo ý bạn)
+    val selectedColor = RedPrimary
     val unselectedColor = Color.Gray
-    val iconColor = if (selected) Color.White else unselectedColor
-    val textColor = if (selected) selectedColor else unselectedColor
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
-        modifier = Modifier.clickable(onClick = onClick).padding(horizontal = 4.dp)) {
+    // ==================================================
+    // BƯỚC 2: SỬA MÀU NỀN HỒNG
+    // ==================================================
+    val boxBackgroundColor = if (selected) Color.White else Color.Transparent // <-- NỀN TRẮNG KHI CHỌN
+    val iconColor = if (selected) selectedColor else unselectedColor // <-- Icon màu hồng
+    val textColor = if (selected) selectedColor else unselectedColor // <-- Chữ màu hồng
+    // ==================================================
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // ==================================================
+        // BƯỚC 1: SỬA LỖI BUILD
+        // ==================================================
+        verticalArrangement = Arrangement.Center, // <-- SỬA LỖI (từ Alignment.CenterVertically)
+        modifier = Modifier.clickable(onClick = onClick).padding(horizontal = 4.dp)
+    ) {
         Box(
-            modifier = if (selected) Modifier.size(40.dp).clip(CircleShape).background(selectedColor)
-            else Modifier.size(40.dp),
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(boxBackgroundColor), // <-- Áp dụng màu nền mới
             contentAlignment = Alignment.Center
         ) { Icon(icon, contentDescription = text, tint = iconColor, modifier = Modifier.size(24.dp)) }
         Spacer(Modifier.height(4.dp))
@@ -467,7 +519,10 @@ private fun Event.isOccurringOn(selectedDate: LocalDate): Boolean {
             }
             "Năm" -> {
                 val sameMonthAndDay = (startDate.month == selectedDate.month && startDate.dayOfMonth == selectedDate.dayOfMonth)
+
+                // (Lỗi bạn gặp ở lần trước đã được sửa trong code này)
                 if (!sameMonthAndDay) return false
+
                 val yearsBetween = ChronoUnit.YEARS.between(startDate, selectedDate)
                 return yearsBetween % interval == 0L
             }
