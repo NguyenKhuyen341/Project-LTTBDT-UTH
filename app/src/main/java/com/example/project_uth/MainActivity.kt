@@ -18,16 +18,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.project_uth.ui.theme.Project_uthTheme
-<<<<<<< HEAD
 import com.example.project_uth.ui.user.ChangePasswordScreen
 import java.time.LocalDate
 import java.time.LocalTime
-=======
->>>>>>> origin/main
 import com.example.project_uth.ui.user.ForgotPasswordScreen1
 import com.example.project_uth.ui.user.LoginScreen
 import com.example.project_uth.ui.user.RegisterScreen
-import java.time.LocalDate
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
