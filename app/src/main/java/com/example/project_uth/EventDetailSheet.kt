@@ -88,7 +88,7 @@ fun EventDetailSheet(
                         modifier = Modifier
                             .size(16.dp)
                             .clip(CircleShape)
-                            .background(event.color ?: Color.Gray)
+                            .background(event.colorInt?.let { Color(it) } ?: Color.Gray)
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(

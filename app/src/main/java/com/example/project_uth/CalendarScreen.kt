@@ -40,6 +40,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.temporal.ChronoUnit
 import androidx.compose.material.icons.filled.Person
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
@@ -266,7 +268,7 @@ private fun EventList(events: List<Event>, modifier: Modifier = Modifier,onEvent
 
 @Composable
 private fun EventCard(event: Event,modifier: Modifier = Modifier) {
-    val cardColor = event.color ?: MaterialTheme.colorScheme.surfaceVariant
+    val cardColor = event.colorInt?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     Surface(
@@ -312,31 +314,64 @@ private fun AvatarStack() {
 }
 
 @Composable
-private fun CalendarBottomNavNewStyle(
+fun CalendarBottomNavNewStyle(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    BottomAppBar(modifier = modifier, containerColor = Color.Transparent, tonalElevation = 0.dp) {
+    // Lấy route hiện tại để biết tab nào đang chọn
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    BottomAppBar(
+        modifier = modifier,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp
+    ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(24.dp),
             color = Color.White, // Nền đã là màu trắng
             shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                NewBottomNavItem(Icons.Default.CalendarMonth, "Lịch", selected = true) {}
-                NewBottomNavItem(Icons.AutoMirrored.Filled.Notes, "Ghi chú") {}
+                NewBottomNavItem(
+                    Icons.Default.CalendarMonth,
+                    "Lịch",
+                    selected = currentRoute == "calendar"
+                ) { navController.navigate("calendar") }
+
+                NewBottomNavItem(
+                    Icons.AutoMirrored.Filled.Notes,
+                    "Ghi chú",
+                    selected = currentRoute == "notes"
+                ) { navController.navigate("notes") }
+
                 NewAddButton { navController.navigate("add_event") }
-                NewBottomNavItem(Icons.Default.Checklist, "Nhiệm vụ") {}
-                NewBottomNavItem(Icons.Default.Settings, "Cài đặt") {}
+
+                NewBottomNavItem(
+                    Icons.Default.Checklist,
+                    "Nhiệm vụ",
+                    selected = currentRoute == "tasks"
+                ) { navController.navigate("tasks") }
+
+                NewBottomNavItem(
+                    Icons.Default.Settings,
+                    "Cài đặt",
+                    selected = currentRoute == "settings"
+                ) { navController.navigate("settings") }
             }
         }
     }
 }
+
+
 
 @Composable
 private fun NewAddButton(onClick: () -> Unit) {
@@ -404,7 +439,7 @@ private fun generateCalendarDays(currentMonth: YearMonth): List<LocalDate?> {
 fun CalendarMainScreen(
     navController: NavController,
     initialSelectedDate: LocalDate,
-    allEvents: SnapshotStateList<Event>,
+    allEvents: List<Event>,
     onDateSelected: (LocalDate) -> Unit,
     onDeleteEvent: (Event) -> Unit,
     onUpdateEvent: (Event, Event) -> Unit
@@ -414,7 +449,7 @@ fun CalendarMainScreen(
     var showEventSheet by remember { mutableStateOf(false) }
     var eventToSheet by remember { mutableStateOf<Event?>(null) }
 
-    val dayEvents by remember(allEvents.size, selectedDate) {
+    val dayEvents by remember(allEvents, selectedDate) {
         derivedStateOf {
             allEvents.filter { event ->
                 event.isOccurringOn(selectedDate)

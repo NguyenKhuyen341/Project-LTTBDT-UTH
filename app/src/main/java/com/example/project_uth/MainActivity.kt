@@ -1,5 +1,6 @@
 package com.example.project_uth
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,17 +9,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.project_uth.ui.theme.Project_uthTheme
+<<<<<<< HEAD
 import com.example.project_uth.ui.user.ChangePasswordScreen
 import java.time.LocalDate
 import java.time.LocalTime
+=======
+>>>>>>> origin/main
 import com.example.project_uth.ui.user.ForgotPasswordScreen1
 import com.example.project_uth.ui.user.LoginScreen
 import com.example.project_uth.ui.user.RegisterScreen
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,37 +41,71 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val nav = rememberNavController()
 
-                    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-                    val allEvents = remember {
-                        mutableStateListOf<Event>()
-                    }
+                    // --- 1. Lấy ViewModel ---
+                    val application = LocalContext.current.applicationContext as Application
+                    val eventViewModel: EventViewModel = viewModel(
+                        factory = EventViewModelFactory(application)
+                    )
 
-                    // Đổi startDestination thành "login"
+                    // --- 2. Biến lưu ngày hiện tại ---
+                    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
+                    // --- 3. Lấy danh sách sự kiện từ ViewModel ---
+                    val allEvents by eventViewModel.allEvents.collectAsState(initial = emptyList())
+
+                    // --- 4. Dữ liệu ghi chú (được lưu khi quay lại màn hình) ---
+                    val savedNotes = rememberSaveable(
+                        saver = listSaver(
+                            save = { list ->
+                                list.flatMap { listOf(it.title, it.content, it.time) }
+                            },
+                            restore = { saved ->
+                                saved.chunked(3)
+                                    .map { chunk ->
+                                        val (title, content, time) = chunk
+                                        Note(title, content, time)
+                                    }
+                                    .toMutableStateList()
+                            }
+                        )
+                    ) { mutableStateListOf<Note>() }
+
+                    // --- 5. Định nghĩa NavHost ---
                     NavHost(navController = nav, startDestination = "calendar") {
 
-                        // Các route cho Lịch (Calendar) của bạn
+                        // --- Màn hình Lịch ---
                         composable("calendar") {
                             CalendarMainScreen(
                                 navController = nav,
                                 initialSelectedDate = selectedDate,
                                 allEvents = allEvents,
                                 onDateSelected = { d -> selectedDate = d },
-                                onDeleteEvent = { event -> allEvents.remove(event) },
-                                onUpdateEvent = { oldEvent, newEvent -> val index = allEvents.indexOf(oldEvent);
-                                    if (index != -1) {
-                                        allEvents[index] = newEvent
-                                    } },
+                                onDeleteEvent = { event -> eventViewModel.deleteEvent(event) },
+                                onUpdateEvent = { _, newEvent -> eventViewModel.updateEvent(newEvent) }
                             )
                         }
+
                         composable("add_event") {
                             AddEventScreen(
                                 navController = nav,
                                 selectedDate = selectedDate,
-                                onSaveEvent = { e -> allEvents.add(e) }
+                                onSaveEvent = { e -> eventViewModel.insertEvent(e) }
                             )
                         }
 
-                        // 5 route cho các màn hình Xác thực (Auth)
+                        composable("notes") {
+                            val savedNotes = remember { mutableStateListOf<Note>() }
+                            NotesScreen(navController = nav, savedNotes = savedNotes)
+                        }
+
+
+                        composable("tasks") {
+                            TasksScreen(navController = nav)
+                        }
+                        composable("settings") {
+                            SettingsScreen(navController = nav)
+                        }
+
                         composable("login") {
                             LoginScreen(navController = nav)
                         }

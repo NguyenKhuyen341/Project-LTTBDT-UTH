@@ -1,8 +1,12 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+<<<<<<< HEAD
     id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.google.gms.google.services)
+=======
+    id("com.google.devtools.ksp")
+>>>>>>> origin/main
 }
 
 android {
@@ -68,10 +72,25 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+<<<<<<< HEAD
 
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+=======
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // Hỗ trợ Coroutines
+    // Thay thế annotationProcessor bằng KSP:
+    ksp("androidx.room:room-compiler:$room_version")
+
+    // Thư viện ViewModel (Sẽ cần ở các bước sau)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
+
+
+
+>>>>>>> origin/main
 }
